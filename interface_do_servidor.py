@@ -15,6 +15,9 @@ class InterfaceDoServidor(tkinter.Frame):
     self.ip_host = "127.0.0.1"
     self.porta_host = 5000
 
+    self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.socket.connect((self.ip_host, self.porta_host))
+
     # Inicializações da interface
     self.fonte = ("Verdana", "8")
     self.fonte_cabecalho = ("Verdana", "12")
@@ -62,11 +65,9 @@ class InterfaceDoServidor(tkinter.Frame):
   manda uma mensagem para o servidor requisitando a lista de usuários conectador
   """
   def atualiza_lista_de_usuarios(self):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-      s.connect((self.ip_host, self.porta_host))
       mensagem = pickle.dumps({"operacao": "listar"})
-      s.sendall(mensagem)
-      data = s.recv(1024)
+      self.socket.sendall(mensagem)
+      data = self.socket.recv(1024)
       usuarios_conectados = pickle.loads(data)
       #print(usuarios_conectados)
       self.destroi_tabela_de_usuarios()
@@ -98,3 +99,6 @@ class InterfaceDoServidor(tkinter.Frame):
     for linha in self.linhas_da_tabela:
       linha["frame"].destroy()
     self.linhas_da_tabela.clear()
+
+  def desconeta(self):
+    self.socket.close()
