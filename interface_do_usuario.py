@@ -5,6 +5,10 @@ from usuario import Usuario
 from servidor import Servidor
 import socket
 import pickle
+import selectors
+import types
+
+sel = selectors.DefaultSelector()
 
 class InterfaceDoUsuario(tkinter.Frame):
   def __init__(self, master=None):
@@ -13,10 +17,8 @@ class InterfaceDoUsuario(tkinter.Frame):
     self.master = master
     self.pack()
 
-    self.ip_host = "127.0.0.1"
+    self.ip_host = "localhost"
     self.porta_host = 5000
-
-    self.porta_usuario = 50000
 
     self.conectado = False
     self.mostrando_consulta = False # variável auxiliar para saber se o frame de consulta está sendo mostrado
@@ -49,13 +51,12 @@ class InterfaceDoUsuario(tkinter.Frame):
     self.nome = self.formulario_nome_usuario.get()
     if (self.nome == ""):
       return
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-      s.connect((self.ip_host, self.porta_host))
-      mensagem = pickle.dumps({"operacao": "criar", "data": self.nome})
-      s.sendall(mensagem)
-      data = s.recv(1024)
-      usuarios_conectados = pickle.loads(data)
-    
+
+    self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.socket.connect((self.ip_host, self.porta_host))
+    mensagem = pickle.dumps({"operacao": "criar", "data": self.nome})
+    self.socket.sendall(mensagem)
+    data = self.socket.recv(1024)
     usuario = pickle.loads(data)["data"]
     if usuario:
       self.ip = usuario.ip
@@ -96,12 +97,10 @@ class InterfaceDoUsuario(tkinter.Frame):
 
     self.nome_consultado = self.formulario_de_consulta.get()
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-      s.connect((self.ip_host, self.porta_host))
-      mensagem = pickle.dumps({"operacao": "consultar", "data": self.nome_consultado})
-      s.sendall(mensagem)
-      data = s.recv(1024)
-      usuario_consultado = pickle.loads(data)["data"]
+    mensagem = pickle.dumps({"operacao": "consultar", "data": self.nome_consultado})
+    self.socket.sendall(mensagem)
+    data = self.socket.recv(1024)
+    usuario_consultado = pickle.loads(data)["data"]
 
     print(f"Consultado usuário: {usuario_consultado}")
 
@@ -128,12 +127,10 @@ class InterfaceDoUsuario(tkinter.Frame):
   Em caso de sucesso, todas as janelas para o usuário conectado são destruídas e o formulário de conexão é criado novamente
   """
   def desconecta(self):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-      s.connect((self.ip_host, self.porta_host))
-      mensagem = pickle.dumps({"operacao": "desconectar", "data": self.nome})
-      s.sendall(mensagem)
-      data = s.recv(1024)
-      resultado = pickle.loads(data)["data"]
+    mensagem = pickle.dumps({"operacao": "desconectar", "data": self.nome})
+    self.socket.sendall(mensagem)
+    data = self.socket.recv(1024)
+    resultado = pickle.loads(data)["data"]
 
     if (resultado):
       self.container_para_label_do_nome_do_usuario_conectado.destroy()
@@ -148,3 +145,6 @@ class InterfaceDoUsuario(tkinter.Frame):
       self.nome = ""
       self.ip = ""
       self.porta = ""
+
+      self.socket.close()
+      

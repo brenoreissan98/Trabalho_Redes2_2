@@ -8,7 +8,7 @@ class ListaDeUsuarios(list):
   def __str__(self):
     string_de_usuarios = ""
     for usuario in self:
-      string_de_usuarios += "Usuário: " + usuario.nome + " IP: " + usuario.ip + " Porta: " + str(usuario.porta) + "\n"
+      string_de_usuarios += "Usuário: {0.nome} IP: {0.ip} Porta: {0.porta}\n".format(usuario)
     return string_de_usuarios
 
   def adiciona_usuario(self, novo_usuario):
@@ -16,5 +16,7 @@ class ListaDeUsuarios(list):
 
   def remove_usuario(self, usuario_a_ser_removido):
     for usuario in self:
-      if usuario.nome == usuario_a_ser_removido.nome and usuario.ip == usuario_a_ser_removido.ip and usuario.porta == usuario_a_ser_removido.porta:
+      if usuario == usuario_a_ser_removido:
         self.remove(usuario)
+        break
+        

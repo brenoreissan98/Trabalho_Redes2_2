@@ -12,3 +12,8 @@ class Usuario:
   
   def dicionario(self):
     return {"nome":self.nome, "ip":self.ip, "porta":self.porta}
+
+  def __eq__(self, other):
+    return self.nome == other.nome and  \
+           self.ip == other.ip and      \
+           self.porta == other.porta
