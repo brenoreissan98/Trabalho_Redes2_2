@@ -82,10 +82,11 @@ class ServidorDeLigacao:
     except:
       pass
 
-  def trata_resposta(self, resposta):
+  def trata_resposta(self, resposta, enviar_resposta=False):
     if resposta == True:
-      mensagem = {"operacao": "resposta_ao_convite", "data":True}
-      self.envia_mensagem(pickle.dumps(mensagem), (self.usuario_destino.ip, self.usuario_destino.porta))
+      if enviar_resposta:
+        mensagem = {"operacao": "resposta_ao_convite", "data":True}
+        self.envia_mensagem(pickle.dumps(mensagem), (self.usuario_destino.ip, self.usuario_destino.porta))
 
       print(f"Em ligação com {self.usuario_destino.nome}")
       self.em_ligacao = True
@@ -119,6 +120,8 @@ class ServidorDeLigacao:
   def liga_para_usuario(self, usuario_ligando, usuario_a_ligar):
     print(f"Ligando para {usuario_a_ligar.nome}")
     self.usuario_destino = usuario_a_ligar
+
+    self.tratando_ligacao = True
 
     endereco = (usuario_a_ligar.ip, usuario_a_ligar.porta)
     mensagem = {"operacao":"convite", "data": usuario_ligando}

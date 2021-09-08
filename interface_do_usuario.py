@@ -17,7 +17,6 @@ class InterfaceDoUsuario(tkinter.Frame):
     self.em_ligacao = False
     self.servidor_de_ligacao = None
 
-    self.tratando_ligacao = False
 
     self.ligando = False
 
@@ -31,6 +30,10 @@ class InterfaceDoUsuario(tkinter.Frame):
 
     self.conectado = False
     self.mostrando_consulta = False # variável auxiliar para saber se o frame de consulta está sendo mostrado
+    self.mostrando_botao_de_encerrar = False # variável auxiliar para saber se o botao de encerrar ligação está renderizado ou não
+    self.mostrando_botoes_de_tratar_ligacao = False # variável auxiliar para saber se os botoes de tratar ligação está renderizado ou não
+    self.mostrando_botao_de_desligar_ligacao = False # variável auxiliar para saber se o botão de desistir de uma ligação está renderizado ou não
+    self.mostranto_botao_de_ligar = False # variável auxiliar para saber se o botão de ligar está renderizado
 
     self.cria_container_do_form_do_usuario()
 
@@ -101,21 +104,44 @@ class InterfaceDoUsuario(tkinter.Frame):
     self.botao_de_consultar = Button(self.container_do_formulario_de_consulta_de_usuario, text="CONSULTAR", bg="blue", fg="white", font=self.fonte, command=self.cria_tela_de_usuario_consultado)
     self.botao_de_consultar.pack(side=LEFT)
 
-  # Checa e atualiza todas as variáveis do servidor de ligação
+  # Checa e atualiza todas as variáveis do servidor de ligação e ajusta interfaces que precisam de variáveis do servidor
   def atualiza_servidor_de_ligacao(self):
     self.servidor_de_ligacao.listen()
 
-    if self.servidor_de_ligacao.recebendo_ligacao and not self.servidor_de_ligacao.em_ligacao and not self.tratando_ligacao:
-      self.tratando_ligacao = True
+    # Tratamento dos botões de tratar ligação recebida
+    if self.servidor_de_ligacao.recebendo_ligacao and not self.servidor_de_ligacao.em_ligacao and not self.mostrando_botoes_de_tratar_ligacao:
       self.cria_botoes_de_tratar_ligacao()
 
-    if self.ligando and not self.tratando_ligacao:
+    if not self.servidor_de_ligacao.recebendo_ligacao and not self.servidor_de_ligacao.em_ligacao and self.mostrando_botoes_de_tratar_ligacao:
+      self.destroi_botoes_de_tratar_ligacao()
+
+    if (not self.ligando or not self.servidor_de_ligacao.recebendo_ligacao) and self.mostrando_consulta and not self.em_ligacao and not self.mostranto_botao_de_ligar:
+      self.cria_botao_de_ligar()
+
+    """
+    if self.ligando and not self.mostrando_botoes_de_tratar_ligacao:
       self.ligando = False
       self.destroi_botao_desligar_ligacao()
       self.cria_botao_de_ligar()
+    """
+  
+    # tratamento do botão de encerrar ligação
+    if self.servidor_de_ligacao.em_ligacao and not self.mostrando_botao_de_encerrar:
+      self.cria_botao_de_encerrar_ligacao()
+
+    if not self.servidor_de_ligacao.em_ligacao and self.mostrando_botao_de_encerrar:
+      self.destroi_botao_de_encerrar_ligacao()
+
+    # Tratamento dos botões de desistir de uma ligação
+    if self.ligando and self.servidor_de_ligacao.tratando_ligacao and not self.mostrando_botao_de_desligar_ligacao and not self.servidor_de_ligacao.em_ligacao:
+      self.cria_botao_desligar_ligacao()
+
+    if not self.ligando and not self.servidor_de_ligacao.tratando_ligacao and self.mostrando_botao_de_desligar_ligacao and not self.servidor_de_ligacao.em_ligacao:
+      self.destroi_botao_desligar_ligacao()
 
   # Cria os botoes quando estiver recebendo uma ligacao
   def cria_botoes_de_tratar_ligacao(self):
+    self.mostrando_botoes_de_tratar_ligacao = True
     if self.mostrando_consulta:
       self.container_botao_de_ligar.destroy()
       self.botao_de_ligar.destroy()
@@ -133,32 +159,37 @@ class InterfaceDoUsuario(tkinter.Frame):
 
   # Aceita uma ligação
   def aceitar_ligacao(self):
-    self.tratando_ligacao = False
+    self.mostrando_botoes_de_tratar_ligacao = False
+    self.em_ligacao = True
 
     self.destroi_botoes_de_tratar_ligacao()
     self.cria_botao_de_encerrar_ligacao()
-    """
-    mensagem = {"operacao": "resposta_ao_convite", "data":True}
-    self.servidor_de_ligacao.envia_mensagem(pickle.dumps(mensagem), (self.usuario_consultado.ip, self.usuario_consultado.porta))
-    """
-    self.servidor_de_ligacao.trata_resposta(True)
+    
+    self.servidor_de_ligacao.trata_resposta(True, enviar_resposta=True)
 
   def cria_botao_de_encerrar_ligacao(self):
+    self.mostrando_botao_de_encerrar = True
     self.container_botao_encerrar_ligacao = Frame(self.master)
     self.container_botao_encerrar_ligacao.pack(side=BOTTOM)
     self.botao_encerrar_ligacao = Button(self.container_botao_encerrar_ligacao, text="ENCERRAR", fg="white", bg="red", command=self.encerra_ligacao)
     self.botao_encerrar_ligacao.pack(side=BOTTOM)
 
-  def encerra_ligacao(self):
+  def destroi_botao_de_encerrar_ligacao(self):
     self.container_botao_encerrar_ligacao.destroy()
     self.botao_encerrar_ligacao.destroy()
 
-    mensagem = {"operacao": "encerrar_ligacao", "data": None}
-    self.servidor_de_ligacao.envia_mensagem(pickle.dumps(mensagem), (self.usuario_consultado.ip, self.usuario_consultado.porta))
+  def encerra_ligacao(self):
+    self.mostrando_botao_de_encerrar = False
+    self.destroi_botao_de_encerrar_ligacao()
+
+    mensagem = pickle.dumps({"operacao": "encerrar_ligacao", "data":True})
+    enredeco = (self.usuario_consultado.ip, self.usuario_consultado.porta)
+    self.servidor_de_ligacao.envia_mensagem(mensagem, enredeco)
+    self.servidor_de_ligacao.encerra_ligacao(True)
 
   # Recusa uma Ligação
   def recusar_ligacao(self):
-    self.tratando_ligacao = False
+    self.mostrando_botoes_de_tratar_ligacao = False
     self.destroi_botoes_de_tratar_ligacao()
     self.cria_botao_de_ligar()
 
@@ -173,6 +204,7 @@ class InterfaceDoUsuario(tkinter.Frame):
 
   # Destroi os botões de tratar ligação
   def destroi_botoes_de_tratar_ligacao(self):
+    self.mostrando_botoes_de_tratar_ligacao = False
     self.container_tratar_ligacao.destroy()
     self.botao_de_aceitar_ligacao.destroy()
     self.botao_de_recusar_ligacao.destroy()
@@ -199,7 +231,7 @@ class InterfaceDoUsuario(tkinter.Frame):
       self.container_botao_de_ligar.destroy()
       self.botao_de_ligar.destroy()
 
-    if not self.tratando_ligacao:
+    if not self.mostrando_botoes_de_tratar_ligacao and not self.servidor_de_ligacao.tratando_ligacao:
       self.cria_botao_de_ligar()
     self.container_tela_de_usuario_consultado = Frame(self.master)
     self.container_tela_de_usuario_consultado.pack(side=TOP)
@@ -215,18 +247,19 @@ class InterfaceDoUsuario(tkinter.Frame):
     self.botao_de_desconectar.pack(side=TOP)
 
   def cria_botao_de_ligar(self):
+    self.mostranto_botao_de_ligar = True
     self.container_botao_de_ligar = Frame(self.master)
     self.container_botao_de_ligar.pack(side=BOTTOM)
     self.botao_de_ligar = Button(self.container_do_botao_de_desconectar, text="LIGAR", fg="white", bg="green", command=self.ligar)
     self.botao_de_ligar.pack(side=BOTTOM)
 
   def destroi_botao_de_ligar(self):
+    self.mostranto_botao_de_ligar = False
     self.container_botao_de_ligar.destroy()
     self.botao_de_ligar.destroy()
 
   def ligar(self):
     self.ligando = True
-    self.tratando_ligacao = True
     self.destroi_botao_de_ligar()
 
     """
@@ -238,6 +271,7 @@ class InterfaceDoUsuario(tkinter.Frame):
     self.cria_botao_desligar_ligacao()
 
   def cria_botao_desligar_ligacao(self):
+    self.mostrando_botao_de_desligar_ligacao = True
     self.container_botao_de_desligar = Frame(self.master)
     self.container_botao_de_desligar.pack(side=BOTTOM)
     self.botao_de_desligar = Button(self.container_botao_de_desligar, text="DESISTIR DA LIGAÇÃO", fg="white", bg="red", command=self.desligar_ligacao)
@@ -249,10 +283,10 @@ class InterfaceDoUsuario(tkinter.Frame):
 
   def desligar_ligacao(self):
     self.ligando = False
-    self.tratando_ligacao = False
+    self.mostrando_botoes_de_tratar_ligacao = False
     mensagem = {"operacao": "resposta_ao_convite", "data": False}
     endereco = (self.usuario_consultado.ip, self.usuario_consultado.porta)
-    self.servidor_de_ligacao.envia_mensagem(mensagem, endereco)
+    self.servidor_de_ligacao.envia_mensagem(pickle.dumps(mensagem), endereco)
     self.destroi_botao_desligar_ligacao()
     self.cria_botao_de_ligar()
 
