@@ -108,6 +108,9 @@ class InterfaceDoUsuario(tkinter.Frame):
   def atualiza_servidor_de_ligacao(self):
     self.servidor_de_ligacao.listen()
 
+    if not self.servidor_de_ligacao.tratando_ligacao and self.mostrando_botao_de_desligar_ligacao:
+      self.destroi_botao_desligar_ligacao()
+
     # Tratamento dos botões de tratar ligação recebida
     if self.servidor_de_ligacao.recebendo_ligacao and not self.servidor_de_ligacao.em_ligacao and not self.mostrando_botoes_de_tratar_ligacao:
       self.cria_botoes_de_tratar_ligacao()
@@ -115,7 +118,7 @@ class InterfaceDoUsuario(tkinter.Frame):
     if not self.servidor_de_ligacao.recebendo_ligacao and not self.servidor_de_ligacao.em_ligacao and self.mostrando_botoes_de_tratar_ligacao:
       self.destroi_botoes_de_tratar_ligacao()
 
-    if (not self.ligando or not self.servidor_de_ligacao.recebendo_ligacao) and self.mostrando_consulta and not self.em_ligacao and not self.mostranto_botao_de_ligar:
+    if not self.ligando and self.mostrando_consulta and not self.em_ligacao and not self.mostranto_botao_de_ligar:
       self.cria_botao_de_ligar()
 
     """
@@ -183,7 +186,7 @@ class InterfaceDoUsuario(tkinter.Frame):
     self.destroi_botao_de_encerrar_ligacao()
 
     mensagem = pickle.dumps({"operacao": "encerrar_ligacao", "data":True})
-    enredeco = (self.usuario_consultado.ip, self.usuario_consultado.porta)
+    enredeco = (self.servidor_de_ligacao.usuario_destino.ip, self.servidor_de_ligacao.usuario_destino.porta)
     self.servidor_de_ligacao.envia_mensagem(mensagem, enredeco)
     self.servidor_de_ligacao.encerra_ligacao(True)
 
@@ -231,7 +234,7 @@ class InterfaceDoUsuario(tkinter.Frame):
       self.container_botao_de_ligar.destroy()
       self.botao_de_ligar.destroy()
 
-    if not self.mostrando_botoes_de_tratar_ligacao and not self.servidor_de_ligacao.tratando_ligacao:
+    if not self.mostrando_botoes_de_tratar_ligacao and not self.servidor_de_ligacao.tratando_ligacao and self.usuario_consultado:
       self.cria_botao_de_ligar()
     self.container_tela_de_usuario_consultado = Frame(self.master)
     self.container_tela_de_usuario_consultado.pack(side=TOP)
@@ -305,6 +308,8 @@ class InterfaceDoUsuario(tkinter.Frame):
       self.container_do_formulario_de_consulta_de_usuario.destroy()
       self.container_do_botao_de_desconectar.destroy()
       self.cria_container_do_form_do_usuario()
+
+      self.encerra_ligacao()
 
       if self.mostrando_consulta:
         self.container_tela_de_usuario_consultado.destroy()
