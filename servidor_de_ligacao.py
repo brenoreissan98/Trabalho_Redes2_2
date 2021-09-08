@@ -2,40 +2,45 @@ from lista_de_usuarios import ListaDeUsuarios
 import socket
 import select
 import pickle
+import pyaudio
 
 from usuario import Usuario
 
 class ServidorDeLigacao:
-  def __init__(self):
+  def __init__(self, ip, porta):
+    self.FORMAT = pyaudio.paInt16
+    self.CHANNELS = 1
+    self.RATE = 44100
+    self.CHUNK = 4096
+
     self.usuarios_conectados = ListaDeUsuarios() # Registro de usuários
-    self.porta = 5000
-    self.ip = "localhost"
+    self.ip = ip
+    self.porta = porta
     self.inicializa_servidor()
+
+    self.usuario_em_ligacao = None
+
+    self.recebendo_ligacao = False
+    self.em_ligacao = False
 
   # Classe que inicializa o Socket com TCP, e com o IP e a PORTA
   def inicializa_servidor(self):
-    self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     self.socket.bind((self.ip, self.porta))
+    self.socket.setblocking(0)
     self.read_list = [self.socket]
-    #self.server_socket.listen(10)
 
-  # Função que será chamada em run_server em um loop infinito que fará o servidor sempre escutar novas conexões e mensagens
+  # Função que será chamada dentro da interface do usuário em um loop infinito que fará o servidor sempre escutar novas conexões e mensagens
   def listen(self):
-    self.socket.listen(10)
-    print(f"Listening on {self.ip}:{self.porta}")
-    while True:
-      readable, writable, errored = select.select(self.read_list, [], [])
-      for s in readable:
-        self.s = s
-        if s is self.socket:
-          self.client_socket, self.address = self.socket.accept()
-          self.read_list.append(self.client_socket)
-          print("Connection from", self.address)
-        else:
-          data = s.recv(1024)
-          if data:
-            self.trata_mensagem(data)
+    try:
+      recebido = self.socket.recvfrom(1024)
+      mensagem = recebido[0]
+      endereco_origem = recebido[1]
+      print(f"from {endereco_origem[0]}:{endereco_origem[1]}")
+      if mensagem:
+        self.trata_mensagem(mensagem)
+    except:
+      pass
     """
     self.socket.listen(10)
     self.conexao, self.end_origem = self.socket.accept()
@@ -47,18 +52,59 @@ class ServidorDeLigacao:
           break
         self.trata_mensagem(mensagem_recebida)
     """
+
   # Função que, ao receber uma mensagem, o servidor verificará a operação que foi pedida e enviará os dados, se necessários, para a função que trata dessa operação
   def trata_mensagem(self, mensagem):
     mensagem = pickle.loads(mensagem)
     print(mensagem)
-    if mensagem["operacao"] == "criar":
-      self.conecta_um_usuario(mensagem["data"])
-    elif mensagem["operacao"] == "desconectar":
-      self.desconecta_um_usuario(mensagem["data"])
-    elif mensagem["operacao"] == "consultar":
-      self.busca_usuario(mensagem["data"])
-    elif mensagem["operacao"] == "listar":
-      self.lista_usuarios_conectados()
+    if mensagem["operacao"] == "convite":
+      self.trata_convite(mensagem["data"])
+    elif mensagem["operacao"] == "resposta_ao_convite":
+      self.trata_resposta(mensagem["data"])
+    elif mensagem["operacao"] == "encerrar_ligacao":
+      pass
+
+  def trata_convite(self, usuario_ligando):
+    print()
+    self.usuario_ligando = usuario_ligando
+    if not self.em_ligacao:
+      self.recebendo_ligacao = True
+    else:
+      mensagem = {"operacao": "resposta_ao_convite", "data": False}
+      self.envia_mensagem(mensagem, (self.usuario_ligando.ip, self.usuario_ligando.porta))
+
+  # Envia uma mensagem para o usuário consultado
+  def envia_mensagem(self, mensagem, endereco):
+    self.socket.sendto(mensagem, endereco)
+
+  def grava_audio_e_envia(self, in_data, frame_count, time_info, status):
+    try:
+      self.socket.sendto(in_data, (self.usuario_ligando.ip, self.usuario_ligando.porta))
+    except:
+      pass
+
+  def trata_resposta(self, resposta):
+    if resposta == True:
+      self.em_ligacao = True
+      self.recebendo_ligacao = False
+      self.audio_input = pyaudio.PyAudio()
+      self.stream_input = self.audio_input.open(format=self.FORMAT, channels=self.CHANNELS, rate=self.RATE, input=True, frames_per_buffer=self.CHUNK, stream_callback=self.grava_audio_e_envia)
+      self.audio_output = pyaudio.PyAudio()
+      self.stream_output = self.audio_output.open(format=self.FORMAT, channels=self.CHANNELS, rate=self.RATE, output=True, frames_per_buffer=self.CHUNK)
+    else:
+      self.recebendo_ligacao = False
+      self.usuario_ligando = None
+
+  def encerra_ligacao(self, deve_encerrar):
+    if deve_encerrar:
+      self.em_ligacao = False
+      
+      self.stream_input.stop_stream()
+      self.stream_input.close()
+      self.audio_input.terminate()
+
+      self.stream_output.close()
+      self.audio_output.terminate()
 
   # Registra um usuário novo, caso esse ainda não exista no servidor
   def conecta_um_usuario(self, nome_do_novo_usuario):

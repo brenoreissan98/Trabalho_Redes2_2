@@ -10,7 +10,12 @@ from tkinter import *
 def main():
   root = tkinter.Tk(screenName="Trabalho Redes II")
   janela = InterfaceDoUsuario(master=root)
-  janela.mainloop()
+  while True:
+    janela.update()
+    janela.update_idletasks()
+    if janela.servidor_de_ligacao:
+      janela.atualiza_servidor_de_ligacao()
+
   janela.desconecta()
 
 # chamando programa principal
