@@ -15,6 +15,7 @@ serversocket.listen(5)
 
 
 def callback(in_data, frame_count, time_info, status):
+    print("Estou enviando audio")
     for s in read_list[1:]:
         s.send(in_data)
     return (None, pyaudio.paContinue)

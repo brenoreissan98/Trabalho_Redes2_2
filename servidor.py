@@ -64,6 +64,7 @@ class Servidor:
   def conecta_um_usuario(self, nome_do_novo_usuario):
     for usuario in self.usuarios_conectados:
       if (usuario.nome == nome_do_novo_usuario):
+        print("Já existe um usuário com esse nome")
         msg = pickle.dumps({"data": None})
         self.s.sendall(msg)
         return
@@ -92,13 +93,14 @@ class Servidor:
 
   # Busca um usuário pelo nome e retorna o usuário via socket
   def busca_usuario(self, nome):
-    print(self.read_list)
-    print(self.s)
+    print(f"consultando usuário com nome: {nome}")
     for usuario in self.usuarios_conectados:
       if nome == usuario.nome:
         msg = pickle.dumps({"data": usuario})
+        print(f"Encontrado usuário : {usuario}")
         self.s.sendall(msg)
         return
+    print(f"Usuário não encontrado")
     msg = pickle.dumps({"data": None})
     self.s.sendall(msg)
 

@@ -68,6 +68,7 @@ class InterfaceDoUsuario(tkinter.Frame):
     data = self.socket.recv(1024)
     usuario = pickle.loads(data)["data"]
     if usuario:
+      self.usuario_conectado = usuario
       self.ip = usuario.ip
       self.porta = usuario.porta
 
@@ -102,8 +103,7 @@ class InterfaceDoUsuario(tkinter.Frame):
 
   # Checa e atualiza todas as variáveis do servidor de ligação
   def atualiza_servidor_de_ligacao(self):
-    if not self.servidor_de_ligacao.em_ligacao:
-      self.servidor_de_ligacao.listen()
+    self.servidor_de_ligacao.listen()
 
     if self.servidor_de_ligacao.recebendo_ligacao and not self.servidor_de_ligacao.em_ligacao and not self.tratando_ligacao:
       self.tratando_ligacao = True
@@ -116,10 +116,11 @@ class InterfaceDoUsuario(tkinter.Frame):
 
   # Cria os botoes quando estiver recebendo uma ligacao
   def cria_botoes_de_tratar_ligacao(self):
-    self.container_botao_de_ligar.destroy()
-    self.botao_de_ligar.destroy()
+    if self.mostrando_consulta:
+      self.container_botao_de_ligar.destroy()
+      self.botao_de_ligar.destroy()
 
-    usuario_ligando = self.servidor_de_ligacao.usuario_ligando
+    usuario_ligando = self.servidor_de_ligacao.usuario_destino
 
     self.container_tratar_ligacao = Frame(self.master)
     self.container_tratar_ligacao.pack(side=BOTTOM)
@@ -136,10 +137,10 @@ class InterfaceDoUsuario(tkinter.Frame):
 
     self.destroi_botoes_de_tratar_ligacao()
     self.cria_botao_de_encerrar_ligacao()
-
+    """
     mensagem = {"operacao": "resposta_ao_convite", "data":True}
     self.servidor_de_ligacao.envia_mensagem(pickle.dumps(mensagem), (self.usuario_consultado.ip, self.usuario_consultado.porta))
-
+    """
     self.servidor_de_ligacao.trata_resposta(True)
 
   def cria_botao_de_encerrar_ligacao(self):
@@ -161,8 +162,10 @@ class InterfaceDoUsuario(tkinter.Frame):
     self.destroi_botoes_de_tratar_ligacao()
     self.cria_botao_de_ligar()
 
+    """
     mensagem = {"operacao": "resposta_ao_convite", "data":False}
     self.servidor_de_ligacao.envia_mensagem(pickle.dumps(mensagem), (self.usuario_consultado.ip, self.usuario_consultado.porta))
+    """
 
     self.servidor_de_ligacao.trata_resposta(False)
 
@@ -225,8 +228,13 @@ class InterfaceDoUsuario(tkinter.Frame):
     self.ligando = True
     self.tratando_ligacao = True
     self.destroi_botao_de_ligar()
+
+    """
     mensagem = {"operacao": "convite", "data": self.usuario_consultado}
     self.servidor_de_ligacao.envia_mensagem(pickle.dumps(mensagem), (self.usuario_consultado.ip, self.usuario_consultado.porta))
+    """
+    
+    self.servidor_de_ligacao.liga_para_usuario(self.usuario_conectado, self.usuario_consultado)
     self.cria_botao_desligar_ligacao()
 
   def cria_botao_desligar_ligacao(self):
@@ -242,7 +250,9 @@ class InterfaceDoUsuario(tkinter.Frame):
   def desligar_ligacao(self):
     self.ligando = False
     self.tratando_ligacao = False
-    self.servidor_de_ligacao.envia_mensagem()
+    mensagem = {"operacao": "resposta_ao_convite", "data": False}
+    endereco = (self.usuario_consultado.ip, self.usuario_consultado.porta)
+    self.servidor_de_ligacao.envia_mensagem(mensagem, endereco)
     self.destroi_botao_desligar_ligacao()
     self.cria_botao_de_ligar()
 
