@@ -52,7 +52,7 @@ class InterfaceDoUsuario(tkinter.Frame):
 
     self.container_botao_submit = Frame(self.container_do_formulario)
     self.container_botao_submit.pack()
-    self.botar_de_submeter_form = Button(self.container_botao_submit, text="CONECTAR", fg="white", bg="green" , command=self.conectar_usuario)
+    self.botar_de_submeter_form = Button(self.container_botao_submit, text="REGISTRAR", fg="white", bg="green" , command=self.conectar_usuario)
     self.botar_de_submeter_form.pack(side=BOTTOM)
 
   """
@@ -234,13 +234,22 @@ class InterfaceDoUsuario(tkinter.Frame):
       self.container_botao_de_ligar.destroy()
       self.botao_de_ligar.destroy()
 
-    if not self.mostrando_botoes_de_tratar_ligacao and not self.servidor_de_ligacao.tratando_ligacao and self.usuario_consultado:
+
+    if (not self.mostrando_botoes_de_tratar_ligacao and not self.servidor_de_ligacao.tratando_ligacao and self.usuario_consultado) and (self.usuario_conectado != self.usuario_consultado):
       self.cria_botao_de_ligar()
-    self.container_tela_de_usuario_consultado = Frame(self.master)
-    self.container_tela_de_usuario_consultado.pack(side=TOP)
-    self.label_usuario_consultado = Label(self.container_tela_de_usuario_consultado, text=f"NOME: {usuario_consultado.nome}\nIP: {usuario_consultado.ip}\nPORTA: {usuario_consultado.porta}")
-    self.label_usuario_consultado.pack(side=BOTTOM)
-    self.mostrando_consulta = True
+
+    if self.usuario_consultado:
+      self.container_tela_de_usuario_consultado = Frame(self.master)
+      self.container_tela_de_usuario_consultado.pack(side=TOP)
+      self.label_usuario_consultado = Label(self.container_tela_de_usuario_consultado, text=f"NOME: {usuario_consultado.nome}\nIP: {usuario_consultado.ip}\nPORTA: {usuario_consultado.porta}")
+      self.label_usuario_consultado.pack(side=BOTTOM)
+      self.mostrando_consulta = True
+    else:
+      self.container_tela_de_usuario_consultado = Frame(self.master)
+      self.container_tela_de_usuario_consultado.pack(side=TOP)
+      self.label_usuario_consultado = Label(self.container_tela_de_usuario_consultado, fg="red", text=f"USUÁRIO NÃO ENCONTRADO")
+      self.label_usuario_consultado.pack(side=BOTTOM)
+      self.mostrando_consulta = True
 
   # Cria o botão de desconectar
   def cria_botao_de_desconectar(self):
@@ -264,14 +273,14 @@ class InterfaceDoUsuario(tkinter.Frame):
   def ligar(self):
     self.ligando = True
     self.destroi_botao_de_ligar()
+    self.servidor_de_ligacao.liga_para_usuario(self.usuario_conectado, self.usuario_consultado)
+    self.cria_botao_desligar_ligacao()
 
     """
     mensagem = {"operacao": "convite", "data": self.usuario_consultado}
     self.servidor_de_ligacao.envia_mensagem(pickle.dumps(mensagem), (self.usuario_consultado.ip, self.usuario_consultado.porta))
     """
     
-    self.servidor_de_ligacao.liga_para_usuario(self.usuario_conectado, self.usuario_consultado)
-    self.cria_botao_desligar_ligacao()
 
   def cria_botao_desligar_ligacao(self):
     self.mostrando_botao_de_desligar_ligacao = True
