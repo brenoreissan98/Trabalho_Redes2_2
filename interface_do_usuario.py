@@ -34,6 +34,7 @@ class InterfaceDoUsuario(tkinter.Frame):
     self.mostrando_botoes_de_tratar_ligacao = False # variável auxiliar para saber se os botoes de tratar ligação está renderizado ou não
     self.mostrando_botao_de_desligar_ligacao = False # variável auxiliar para saber se o botão de desistir de uma ligação está renderizado ou não
     self.mostranto_botao_de_ligar = False # variável auxiliar para saber se o botão de ligar está renderizado
+    self.mostrando_mensagem_de_usuario_ja_existente = False
 
     self.cria_container_do_form_do_usuario()
 
@@ -75,16 +76,34 @@ class InterfaceDoUsuario(tkinter.Frame):
       self.ip = usuario.ip
       self.porta = usuario.porta
 
+      # Assim que o usuário conecta no servidor de registro e é registrado, é criado um servidor de ligação para ele
       self.servidor_de_ligacao = ServidorDeLigacao(self.ip, self.porta)
 
       self.label_nome_usuario["fg"] = "black"
+
+      if self.mostrando_mensagem_de_usuario_ja_existente:
+        self.destroi_mensagem_de_nome_ja_existente()
 
       self.cria_label_para_usuario_conectado()
       self.container_do_formulario.destroy()
       self.cria_formulario_de_consulta_de_usuario()
       self.cria_botao_de_desconectar()
     else:
+      if not self.mostrando_mensagem_de_usuario_ja_existente:
+        self.cria_mensagem_de_nome_ja_existente()
       self.label_nome_usuario["fg"] = "red"
+
+  def cria_mensagem_de_nome_ja_existente(self):
+    self.mostrando_mensagem_de_usuario_ja_existente = True
+    self.container_mensagem_usuario_ja_registrado = Frame(self.master)
+    self.container_mensagem_usuario_ja_registrado.pack(side=TOP)
+    self.label_mensagem_usuario_ja_registrado = Label(self.container_mensagem_usuario_ja_registrado, fg="red", text=f"NOME DE USUÁRIO JÁ REGISTRADO")
+    self.label_mensagem_usuario_ja_registrado.pack(side=TOP)
+
+  def destroi_mensagem_de_nome_ja_existente(self):
+    self.mostrando_mensagem_de_usuario_ja_existente = False
+    self.container_mensagem_usuario_ja_registrado.destroy()
+    self.label_mensagem_usuario_ja_registrado.destroy()
 
   # Cria label para o usuário conectado
   def cria_label_para_usuario_conectado(self):
@@ -160,7 +179,6 @@ class InterfaceDoUsuario(tkinter.Frame):
     self.botao_de_recusar_ligacao = Button(self.container_tratar_ligacao, text="RECUSAR", fg="white", bg="red", command=self.recusar_ligacao)
     self.botao_de_recusar_ligacao.pack(side=LEFT)
 
-  # Aceita uma ligação
   def aceitar_ligacao(self):
     self.mostrando_botoes_de_tratar_ligacao = False
     self.em_ligacao = True
@@ -275,12 +293,6 @@ class InterfaceDoUsuario(tkinter.Frame):
     self.destroi_botao_de_ligar()
     self.servidor_de_ligacao.liga_para_usuario(self.usuario_conectado, self.usuario_consultado)
     self.cria_botao_desligar_ligacao()
-
-    """
-    mensagem = {"operacao": "convite", "data": self.usuario_consultado}
-    self.servidor_de_ligacao.envia_mensagem(pickle.dumps(mensagem), (self.usuario_consultado.ip, self.usuario_consultado.porta))
-    """
-    
 
   def cria_botao_desligar_ligacao(self):
     self.mostrando_botao_de_desligar_ligacao = True

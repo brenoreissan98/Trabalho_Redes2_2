@@ -13,18 +13,17 @@ class ServidorDeLigacao:
     self.RATE = 44100
     self.CHUNK = 8192
 
-    self.usuarios_conectados = ListaDeUsuarios() # Registro de usuários
     self.ip = ip
     self.porta = porta
     self.inicializa_servidor()
 
+    # variáveis auxiliares para controlar os estados do servidor de ligação
     self.usuario_em_ligacao = None
-
     self.recebendo_ligacao = False
     self.em_ligacao = False
     self.tratando_ligacao = False
 
-  # Classe que inicializa o Socket com TCP, e com o IP e a PORTA
+  # Classe que inicializa o Socket UDP com o IP e a PORTA enviados no contrutor
   def inicializa_servidor(self):
     self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     self.socket.bind((self.ip, self.porta))
