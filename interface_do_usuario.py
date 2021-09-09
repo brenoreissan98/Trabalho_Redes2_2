@@ -35,6 +35,7 @@ class InterfaceDoUsuario(tkinter.Frame):
     self.mostrando_botao_de_desligar_ligacao = False # variável auxiliar para saber se o botão de desistir de uma ligação está renderizado ou não
     self.mostranto_botao_de_ligar = False # variável auxiliar para saber se o botão de ligar está renderizado
     self.mostrando_mensagem_de_usuario_ja_existente = False
+    self.mostrando_mensagem_de_usuario_ocupado = False
 
     self.cria_container_do_form_do_usuario()
 
@@ -129,6 +130,14 @@ class InterfaceDoUsuario(tkinter.Frame):
 
     if not self.servidor_de_ligacao.tratando_ligacao and self.mostrando_botao_de_desligar_ligacao:
       self.destroi_botao_desligar_ligacao()
+      
+    # Cria mensagem de usuário ocupado
+    if not self.servidor_de_ligacao.tratando_ligacao and self.mostrando_botao_de_desligar_ligacao and self.servidor_de_ligacao.usuario_de_destino_ocupado and not self.mostrando_mensagem_de_usuario_ocupado:
+      self.cria_mensagem_usuario_ocupado()
+
+    # Destroi mensagem de usuário ocupado caso ele comece outra ligação ou ligue pra alguém
+    if self.mostrando_mensagem_de_usuario_ocupado and (self.servidor_de_ligacao.em_ligacao or self.servidor_de_ligacao.tratando_ligacao):
+      self.destroi_mensagem_usuario_ocupado()
 
     # Tratamento dos botões de tratar ligação recebida
     if self.servidor_de_ligacao.recebendo_ligacao and not self.servidor_de_ligacao.em_ligacao and not self.mostrando_botoes_de_tratar_ligacao:
@@ -153,6 +162,18 @@ class InterfaceDoUsuario(tkinter.Frame):
 
     if not self.ligando and not self.servidor_de_ligacao.tratando_ligacao and self.mostrando_botao_de_desligar_ligacao and not self.servidor_de_ligacao.em_ligacao:
       self.destroi_botao_desligar_ligacao()
+
+
+  def cria_mensagem_usuario_ocupado(self):
+    self.mostrando_mensagem_de_usuario_ocupado = True
+    self.container_mensagem_usuario_ocupado = Frame(self.master)
+    self.container_mensagem_usuario_ocupado.pack(side=BOTTOM)
+    self.label_usuario_ocupado = Label(self.container_mensagem_usuario_ocupado, fg="red", text=f"USUÁRIO OCUPADO")
+    self.label_usuario_ocupado.pack(side=TOP)
+
+  def destroi_mensagem_usuario_ocupado(self):
+    self.container_mensagem_usuario_ocupado.destroy()
+    self.label_usuario_ocupado.destroy()
 
   # Cria os botoes quando estiver recebendo uma ligacao
   def cria_botoes_de_tratar_ligacao(self):

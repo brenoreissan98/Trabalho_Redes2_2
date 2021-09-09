@@ -1,6 +1,5 @@
 from lista_de_usuarios import ListaDeUsuarios
 import socket
-import select
 import pickle
 import pyaudio
 
@@ -23,13 +22,14 @@ class ServidorDeLigacao:
     self.recebendo_ligacao = False
     self.em_ligacao = False
     self.tratando_ligacao = False
+    self.usuario_de_destino_ocupado = False
 
   # Classe que inicializa o Socket UDP com o IP e a PORTA enviados no contrutor
   def inicializa_servidor(self):
     self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     self.socket.bind((self.ip, self.porta))
     self.socket.setblocking(0)
-    self.read_list = [self.socket]
+    #self.read_list = [self.socket]
 
   # Função que será chamada dentro da interface do usuário em um loop infinito que fará o servidor sempre escutar novas e mensagens
   def listen(self):
@@ -71,7 +71,7 @@ class ServidorDeLigacao:
       self.usuario_destino = usuario_ligando # Guarda qual é o usuário que está ligando
     else:
       print(f"OCUPADO")
-      mensagem = {"operacao": "resposta_ao_convite", "data": False}
+      mensagem = {"operacao": "resposta_ao_convite", "data": "Ocupado"}
       self.envia_mensagem(pickle.dumps(mensagem), (usuario_ligando.ip, usuario_ligando.porta))
 
   # Envia uma mensagem para o usuário consultado
@@ -109,6 +109,12 @@ class ServidorDeLigacao:
       self.stream_input = self.audio_input.open(format=self.FORMAT, channels=self.CHANNELS, rate=self.RATE, input=True, frames_per_buffer=self.CHUNK, stream_callback=self.grava_audio_e_envia)
       self.audio_output = pyaudio.PyAudio()
       self.stream_output = self.audio_output.open(format=self.FORMAT, channels=self.CHANNELS, rate=self.RATE, output=True, frames_per_buffer=self.CHUNK)
+    elif resposta == "Ocupado":
+      print(f"{self.usuario_destino.nome} está OCUPADO")
+      self.recebendo_ligacao = False
+      self.usuario_destino = None
+      self.tratando_ligacao = False
+      self.usuario_de_destino_ocupado = True
     else:
       if enviar_resposta:
         mensagem = {"operacao": "resposta_ao_convite", "data":False}
