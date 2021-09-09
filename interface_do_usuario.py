@@ -139,13 +139,6 @@ class InterfaceDoUsuario(tkinter.Frame):
 
     if not self.ligando and self.mostrando_consulta and not self.em_ligacao and not self.mostranto_botao_de_ligar:
       self.cria_botao_de_ligar()
-
-    """
-    if self.ligando and not self.mostrando_botoes_de_tratar_ligacao:
-      self.ligando = False
-      self.destroi_botao_desligar_ligacao()
-      self.cria_botao_de_ligar()
-    """
   
     # tratamento do botão de encerrar ligação
     if self.servidor_de_ligacao.em_ligacao and not self.mostrando_botao_de_encerrar:
@@ -213,11 +206,6 @@ class InterfaceDoUsuario(tkinter.Frame):
     self.mostrando_botoes_de_tratar_ligacao = False
     self.destroi_botoes_de_tratar_ligacao()
     self.cria_botao_de_ligar()
-
-    """
-    mensagem = {"operacao": "resposta_ao_convite", "data":False}
-    self.servidor_de_ligacao.envia_mensagem(pickle.dumps(mensagem), (self.usuario_consultado.ip, self.usuario_consultado.porta))
-    """
 
     self.servidor_de_ligacao.trata_resposta(False, enviar_resposta=True)
 

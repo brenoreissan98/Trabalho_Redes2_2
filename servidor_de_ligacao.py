@@ -8,6 +8,7 @@ from usuario import Usuario
 
 class ServidorDeLigacao:
   def __init__(self, ip, porta):
+    # Variáveis para o PyAudio processar e enviar o audio
     self.FORMAT = pyaudio.paInt16
     self.CHANNELS = 1
     self.RATE = 44100
@@ -30,23 +31,27 @@ class ServidorDeLigacao:
     self.socket.setblocking(0)
     self.read_list = [self.socket]
 
-  # Função que será chamada dentro da interface do usuário em um loop infinito que fará o servidor sempre escutar novas conexões e mensagens
+  # Função que será chamada dentro da interface do usuário em um loop infinito que fará o servidor sempre escutar novas e mensagens
   def listen(self):
     try:
       recebido = self.socket.recvfrom(16384)
       mensagem = recebido[0]
       endereco_origem = recebido[1]
-      #print(mensagem)
-      #print(f"mensagem {pickle.loads(mensagem)} de {endereco_origem[0]}:{endereco_origem[1]}")
-      #print(f"mensagem é {type(pickle.loads(mensagem))}")
+
+      """
+      Caso o usuário esteja em uma ligação, então ele terá uma instancia de stream_output
+      que será responsável por decodificar o audio e transformar em voz, então é necessário enviar
+      a mensagem recebida pelo socket para ele
+      """
       if self.em_ligacao:
         self.stream_output.write(mensagem)
+      # Caso seja um objeto do tipo dict, então é uma mensagem com o padrão de mensagem estabelecido e deve ser tratado
       if isinstance(pickle.loads(mensagem), dict):
         self.trata_mensagem(mensagem)
     except Exception as e:
       pass
 
-  # Função que, ao receber uma mensagem, o servidor verificará a operação que foi pedida e enviará os dados, se necessários, para a função que trata dessa operação
+  # Função que ao receber uma mensagem verificará a operação que foi pedida e enviará os dados, se necessários, para a função que trata dessa operação
   def trata_mensagem(self, mensagem):
     mensagem = pickle.loads(mensagem)
     print(mensagem)
@@ -57,6 +62,7 @@ class ServidorDeLigacao:
     elif mensagem["operacao"] == "encerrar_ligacao":
       self.encerra_ligacao(mensagem["data"])
 
+  # trata um convite de ligação recebido recebido
   def trata_convite(self, usuario_ligando):
     print(f"Recebendo ligação de {usuario_ligando.nome}")
     if not self.em_ligacao and not self.recebendo_ligacao:
@@ -72,6 +78,7 @@ class ServidorDeLigacao:
   def envia_mensagem(self, mensagem, endereco):
     self.socket.sendto(mensagem, endereco)
 
+  # função auxiliar que fará o PyAudio enviar a voz para o usuário de destino
   def grava_audio_e_envia(self, in_data, frame_count, time_info, status):
     try:
       #print(f"Enviando audio para {self.usuario_destino.nome} ip: {self.usuario_destino.ip} porta: {self.usuario_destino.porta}")
@@ -81,6 +88,13 @@ class ServidorDeLigacao:
     except:
       pass
 
+  """
+  Trata da resposta de um usuário
+  se o usuário aceitar da interface do usuário, deve-se utilizar a flag de "enviar_resposta" para poder mandar uma mensagem
+  para o usuário de origem que a ligação foi aceita.
+  Quando um usuário de origem receber a mensagem de aceitação como resposta, ela não terá o flag para aceitar a resposta,
+  somente criará e estabelecerá a chamada de voz
+  """
   def trata_resposta(self, resposta, enviar_resposta=False):
     if resposta == True:
       if enviar_resposta:
@@ -105,6 +119,7 @@ class ServidorDeLigacao:
       self.usuario_destino = None
       self.tratando_ligacao = False
 
+  # Encerra a ligação em andamento
   def encerra_ligacao(self, deve_encerrar):
     if deve_encerrar:
       print(f"Encerrando ligação")
