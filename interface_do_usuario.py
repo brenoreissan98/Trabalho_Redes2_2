@@ -201,7 +201,7 @@ class InterfaceDoUsuario(tkinter.Frame):
     self.servidor_de_ligacao.envia_mensagem(pickle.dumps(mensagem), (self.usuario_consultado.ip, self.usuario_consultado.porta))
     """
 
-    self.servidor_de_ligacao.trata_resposta(False)
+    self.servidor_de_ligacao.trata_resposta(False, enviar_resposta=True)
 
     print("Recusei")
 

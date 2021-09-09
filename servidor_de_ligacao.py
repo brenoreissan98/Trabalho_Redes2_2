@@ -60,14 +60,14 @@ class ServidorDeLigacao:
 
   def trata_convite(self, usuario_ligando):
     print(f"Recebendo ligação de {usuario_ligando.nome}")
-    if not self.em_ligacao:
+    if not self.em_ligacao and not self.recebendo_ligacao:
       self.recebendo_ligacao = True
       self.tratando_ligacao = True
       self.usuario_destino = usuario_ligando # Guarda qual é o usuário que está ligando
     else:
       print(f"OCUPADO")
       mensagem = {"operacao": "resposta_ao_convite", "data": False}
-      self.envia_mensagem(mensagem, (self.usuario_destino.ip, self.usuario_destino.porta))
+      self.envia_mensagem(pickle.dumps(mensagem), (usuario_ligando.ip, usuario_ligando.porta))
 
   # Envia uma mensagem para o usuário consultado
   def envia_mensagem(self, mensagem, endereco):
@@ -97,8 +97,9 @@ class ServidorDeLigacao:
       self.audio_output = pyaudio.PyAudio()
       self.stream_output = self.audio_output.open(format=self.FORMAT, channels=self.CHANNELS, rate=self.RATE, output=True, frames_per_buffer=self.CHUNK)
     else:
-      mensagem = {"operacao": "resposta_ao_convite", "data":False}
-      self.envia_mensagem(pickle.dumps(mensagem), (self.usuario_destino.ip, self.usuario_destino.porta))
+      if enviar_resposta:
+        mensagem = {"operacao": "resposta_ao_convite", "data":False}
+        self.envia_mensagem(pickle.dumps(mensagem), (self.usuario_destino.ip, self.usuario_destino.porta))
 
       print(f"ligação de {self.usuario_destino.nome} recusada")
       self.recebendo_ligacao = False
